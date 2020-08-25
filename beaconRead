@@ -1,0 +1,87 @@
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEScan.h>
+#include <BLEUUID.h>
+#include <BLEAdvertisedDevice.h>
+#include <BLEBeacon.h>
+
+BLEScan* pBLEScan;
+BLEBeacon id;
+
+int scanTime = 7; //In seconds
+
+String reverse(String str) {
+  String rev;
+  for (int i = str.length() - 1; i >= 0; i--) {
+    rev = rev + str[i];
+  } 
+  return rev;
+
+}
+
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
+{
+    void onResult(BLEAdvertisedDevice advertisedDevice)
+    {
+      id.setData(advertisedDevice.getManufacturerData());
+      
+      //Print UUID
+      String bUUID = id.getProximityUUID().toString().c_str();
+      bUUID = reverse(bUUID);
+      Serial.print("UUID :");
+      Serial.print(bUUID);
+      Serial.println("");
+      
+      //Print RSSI
+      int bRSSI = advertisedDevice.getRSSI();
+
+
+      //Print Major
+      int bMajor = id.getMajor() ;/// 256;
+
+
+      //Print Minor
+      //Serial.print(",Minor :");
+      //int bMinor = id.getMinor() / 256;
+      //Serial.print(bMinor);
+      //Serial.println("");
+      
+      //如果找到的UUID相同
+      if( bUUID == "df5a60394a2e-f41b-fafc-cc52-142a00f8" ) //FDA50693-A4E2-4FB1-AFCF-CC2541A2008F
+      {
+        if( bMajor < 10 ) Serial.println(">B,0" + (String)bMajor + "," + (String)abs(bRSSI) + "$");
+        else Serial.println(">B," + (String)bMajor + "," + (String)abs(bRSSI) + "$");
+      }
+    
+
+
+    }
+};
+
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("");
+}
+
+void loop()
+{
+  iBeaconScan();
+}
+
+//========================================//
+//              beacon                    //
+//========================================//
+
+void iBeaconScan (void)
+{
+  BLEDevice::init("");
+  pBLEScan = BLEDevice::getScan();
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setActiveScan(true);
+  BLEScanResults foundDevices = pBLEScan->start(scanTime);
+  
+  Serial.print(">F,"); //Found Beacon
+  Serial.print(foundDevices.getCount());
+  Serial.println("$");
+}
